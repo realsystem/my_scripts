@@ -1,0 +1,41 @@
+#!/bin/bash
+
+ename="lcm_test"
+##clean old env
+enum=$(fuel env  | grep $ename | awk '{print $1}')
+#fuel --env $enum env --force delete
+##create new env
+#rel=$(fuel release | grep "Ubuntu 14.04" | awk '{print $1}')
+#fuel env create --name $ename --rel $rel --net-segment-type tun
+#enum=$(fuel env  | grep $ename | awk '{print $1}')
+##update env
+#fuel env --env $enum --attributes --download
+#sed '/^      default: false$/{$!{N;s/^      default: false\n      enabled: false$/      default: false\n      enabled: true/;ty;P;D;:y}}' cluster_${enum}/attributes.yaml > cluster_${enum}/attributes_new.yaml
+#mv cluster_${enum}/attributes_new.yaml cluster_${enum}/attributes.yaml
+#sed '/^          value: \x27\x27$/{$!{N;s/^          value: \x27\x27\n          weight: 155$/          value: \x27http:\/\/gerrit.mtn5.cci.att.com:18080\/lcm_control\x27\n          weight: 155/;ty;P;D;:y}}' cluster_${enum}/attributes.yaml > cluster_${enum}/attributes_new.yaml
+#mv cluster_${enum}/attributes_new.yaml cluster_${enum}/attributes.yaml
+#fuel env --env $enum --attributes --upload
+##add nodes to env
+#for nnum in $(fuel node | grep discover | awk '{print $1}' | head -n1); do
+#nrole=$(fuel node --node $nnum | awk '{print $15}')
+#if [ "$role" != "lcm" ]; then
+#fuel --env $enum node set --node $nnum --role lcm
+#continue
+#fi
+#done
+#fuel env --env $enum
+#fuel node --env $enum | grep lcm
+#fuel deploy-changes --env $enum
+lcm_ip=$(fuel node --env $enum | grep lcm | awk {'print $10'})
+ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
+echo $ret | python -mjson.tool
+ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments -s)
+echo $ret | python -mjson.tool
+#ret=$(ssh fuel@$lcm_ip curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/smart_proxies/1/import_puppetclasses -s)
+ret=$(echo ssh fuel@$lcm_ip curl -X PUT -H \'Content-Type:application/json\' -H \'Accept:application/json\' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s --data {\'host\':{\'id\':1, \'environment_name\':\'main_9_0\', \'managed\':true}})
+echo $ret
+ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s)
+echo $ret | python -mjson.tool | grep environment_name
+#echo $ret | python -mjson.tool | grep main_9_0
+#ret=$(ssh fuel@$lcm_ip puppet agent -t --noop)
+#echo $ret
