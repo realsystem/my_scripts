@@ -27,15 +27,19 @@ enum=$(fuel env  | grep $ename | awk '{print $1}')
 #fuel node --env $enum | grep lcm
 #fuel deploy-changes --env $enum
 lcm_ip=$(fuel node --env $enum | grep lcm | awk {'print $10'})
-ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
-echo $ret | python -mjson.tool
-ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments -s)
-echo $ret | python -mjson.tool
+#ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
+#echo $ret | python -mjson.tool
+#ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments -s)
+#echo $ret | python -mjson.tool
 #ret=$(ssh fuel@$lcm_ip curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/smart_proxies/1/import_puppetclasses -s)
-ret=$(echo ssh fuel@$lcm_ip curl -X PUT -H \'Content-Type:application/json\' -H \'Accept:application/json\' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s --data {\'host\':{\'id\':1, \'environment_name\':\'main_9_0\', \'managed\':true}})
-echo $ret
-ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s)
-echo $ret | python -mjson.tool | grep environment_name
-#echo $ret | python -mjson.tool | grep main_9_0
-#ret=$(ssh fuel@$lcm_ip puppet agent -t --noop)
+#ret=$(ssh fuel@$lcm_ip "curl -X PUT -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s --data '{\"host\":{\"id\":1, \"environment_name\":\"main_9_0\", \"managed\":true}}'")
 #echo $ret
+#ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s)
+#echo $ret | python -mjson.tool | grep environment_name
+ret=$(ssh fuel@$lcm_ip "curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/2/puppetclasses -s")
+echo $ret | python -mjson.tool
+ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s)
+echo $ret | python -mjson.tool | grep hostgroup
+ret=$(ssh fuel@$lcm_ip "curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1/puppetclass_ids -s --data '{\"hostgroup_id\":null, \"puppetclass_id\":\"test\"'")
+ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1/puppetclass_ids -s)
+echo $ret | python -mjson.tool
