@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-# fuel3 <env_name> <remove?> <recreate?> <full?>
+# fuel3 <env_name> <remove_env?> <create_env?> <remove_all_nodes?> <add_nodes?> <deploy?> <manage?>
 ename=$1
 ##clean old env
 enum=$(fuel env  | grep $ename | awk '{print $1}')
@@ -23,31 +23,47 @@ if [ "$3" == "y" ]; then
   fuel env --env $enum --attributes --upload
 fi
 ##add nodes to env
-if [ "$4" == "y" ]; then
-for nnum in $(fuel node | grep discover | awk '{print $1}' | head -n1); do
-  nrole=$(fuel node --node $nnum | awk '{print $15}')
-  if [ "$nrole" != "aic-compute" ]; then
-    fuel --env $enum node set --node $nnum --role aic-compute
-    continue
-  fi
-  if [ "$nrole" != "lcm" ]; then
-    fuel --env $enum node set --node $nnum --role lcm
-    continue
+function add_node() {
+# 1 - number
+# 2 - env ID
+# 3 - comma separataed role list
+for n in {1..$1}; do
+  nnum=$(fuel node | grep discover | grep -v lcm | grep -v aic | grep -v contrail | grep -v kibana | grep -v grafana | grep -v alert | awk '{print $1}' | head -n1)
+  if [ -n "$nnum" ]; then
+    fuel --env $2 node set --node $nnum --role $3
   fi
 done
+}
+if [ "$4" == "y" ]; then
+  fuel --env $enum node remove --all
+fi
+if [ "$5" == "y" ]; then
+  add_node 1 $enum aic-compute
+  add_node 1 $enum lcm
+  add_node 1 $enum aic-controller,aic-haproxy,aic-swift-proxy
+  add_node 1 $enum aic-identity
+  add_node 1 $enum aic-dbng
+  add_node 1 $enum aic-swift-storage
+  add_node 1 $enum contrail-config,contrail-db,contrail-control
+  add_node 1 $enum elasticsearch_kibana,influxdb_grafana,infrastructure_alerting
 fi
 fuel env --env $enum
 fuel node --env $enum | grep lcm
-#fuel deploy-changes --env $enum
-#lcm_ip=$(fuel node --env $enum | grep lcm | awk {'print $10'})
-#ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
-#echo $ret | python -mjson.tool
-#ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments -s)
-#echo $ret | python -mjson.tool
-#ret=$(ssh fuel@$lcm_ip curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/2/smart_proxies/1/import_puppetclasses -s)
-#echo $ret
-#ret=$(ssh fuel@$lcm_ip "curl -X PUT -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s --data '{\"host\":{\"id\":1, \"environment_name\":\"main_9_0\", \"managed\":true}}'")
-#echo $ret
+if [ "$6" == "y" ]; then
+  fuel deploy-changes --env $enum
+fi
+if [ "$7" == "y" ]; then
+lcm_ip=$(fuel node --env $enum | grep lcm | awk {'print $10'})
+ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
+echo $ret | python -mjson.tool
+ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments -s)
+echo $ret | python -mjson.tool
+ret=$(ssh fuel@$lcm_ip curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/2/smart_proxies/1/import_puppetclasses -s)
+echo $ret
+for h in {1..7}; do
+  ret=$(ssh fuel@$lcm_ip "curl -X PUT -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/${h} -s --data '{\"host\":{\"id\":1, \"environment_name\":\"main_9_0\", \"managed\":true}}'")
+  echo $ret
+done
 #ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s)
 #echo $ret | python -mjson.tool | grep environment_name
 #ret=$(ssh fuel@$lcm_ip "curl -X GET -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/2/puppetclasses -s --data '{\"per_page\": 1000}'")
@@ -60,3 +76,4 @@ fuel node --env $enum | grep lcm
 #echo $ret
 #ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1/puppetclass_ids -s)
 #echo $ret | python -mjson.tool
+fi
