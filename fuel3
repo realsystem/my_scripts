@@ -1,10 +1,19 @@
 #!/bin/bash -ex
 
 # fuel3 <env_name> <remove_env?> <create_env?> <remove_all_nodes?> <add_nodes?> <deploy?> <manage?>
+# get plugins
+plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/drop4/main/9.0/fuel-plugins-9.0/"
+plug_list="lma_collector aic-fuel-plugin fuel-plugin-lcm elasticsearch_kibana influxdb_grafana alerting contrail"
+for p in ${plug_list}; do
+  echo $p
+  p_name=$(curl ${plug_url} -s | grep ${p} | awk -F'href=\"' '{print $2}' | awk -F'\">' '{print $1}' | sed '/^$/d' | tail -1)
+  wget ${plug_url}${p_name}
+  fuel plugins --install ${p_name}
+done
 ename=$1
 ##clean old env
-enum=$(fuel env  | grep $ename | awk '{print $1}')
 if [ "$2" == "y" ] && [ -n "$enum" ]; then
+  enum=$(fuel env  | grep $ename | awk '{print $1}')
   fuel --env $enum env --force delete
 fi
 ##create new env
@@ -47,9 +56,9 @@ if [ "$5" == "y" ]; then
   add_node 1 $enum contrail-config,contrail-db,contrail-control
   add_node 1 $enum elasticsearch_kibana,influxdb_grafana,infrastructure_alerting
 fi
-fuel env --env $enum
-fuel node --env $enum | grep lcm
 if [ "$6" == "y" ]; then
+  fuel env --env $enum
+  fuel node --env $enum | grep lcm
   fuel deploy-changes --env $enum
 fi
 if [ "$7" == "y" ]; then
