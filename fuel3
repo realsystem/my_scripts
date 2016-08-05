@@ -1,23 +1,26 @@
 #!/bin/bash -ex
 
-# fuel3 <env_name> <remove_env?> <create_env?> <remove_all_nodes?> <add_nodes?> <deploy?> <manage?>
+# fuel3 <env_name> <install_plugins?> <remove_env?> <create_env?> <remove_all_nodes?> <add_nodes?> <deploy?> <manage?>
+# fuel3 lcm1 p w c r a d m
 # get plugins
-plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/drop4/main/9.0/fuel-plugins-9.0/"
-plug_list="lma_collector aic-fuel-plugin fuel-plugin-lcm elasticsearch_kibana influxdb_grafana alerting contrail"
-for p in ${plug_list}; do
-  echo $p
-  p_name=$(curl ${plug_url} -s | grep ${p} | awk -F'href=\"' '{print $2}' | awk -F'\">' '{print $1}' | sed '/^$/d' | tail -1)
-  wget ${plug_url}${p_name}
-  fuel plugins --install ${p_name}
-done
+if [ "$2" == "p" ]; then
+  plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/drop4/main/9.0/fuel-plugins-9.0/"
+  plug_list="lma_collector aic-fuel-plugin fuel-plugin-lcm elasticsearch_kibana influxdb_grafana alerting contrail"
+  for p in ${plug_list}; do
+    echo $p
+    p_name=$(curl ${plug_url} -s | grep ${p} | awk -F'href=\"' '{print $2}' | awk -F'\">' '{print $1}' | sed '/^$/d' | tail -1)
+    wget ${plug_url}${p_name}
+    fuel plugins --install ${p_name}
+  done
+fi
 ename=$1
 ##clean old env
-if [ "$2" == "y" ] && [ -n "$enum" ]; then
-  enum=$(fuel env  | grep $ename | awk '{print $1}')
+enum=$(fuel env  | grep $ename | awk '{print $1}')
+if [ "$3" == "w" ] && [ -n "$enum" ]; then
   fuel --env $enum env --force delete
 fi
 ##create new env
-if [ "$3" == "y" ]; then
+if [ "$4" == "c" ]; then
   rel=$(fuel release | grep "Ubuntu 14.04" | awk '{print $1}')
   fuel env create --name $ename --rel $rel --net-segment-type tun
   enum=$(fuel env  | grep $ename | awk '{print $1}')
@@ -43,10 +46,10 @@ for n in {1..$1}; do
   fi
 done
 }
-if [ "$4" == "y" ]; then
+if [ "$5" == "r" ]; then
   fuel --env $enum node remove --all
 fi
-if [ "$5" == "y" ]; then
+if [ "$6" == "a" ]; then
   add_node 1 $enum aic-compute
   add_node 1 $enum lcm
   add_node 1 $enum aic-controller,aic-haproxy,aic-swift-proxy
@@ -56,12 +59,12 @@ if [ "$5" == "y" ]; then
   add_node 1 $enum contrail-config,contrail-db,contrail-control
   add_node 1 $enum elasticsearch_kibana,influxdb_grafana,infrastructure_alerting
 fi
-if [ "$6" == "y" ]; then
+if [ "$7" == "d" ]; then
   fuel env --env $enum
   fuel node --env $enum | grep lcm
   fuel deploy-changes --env $enum
 fi
-if [ "$7" == "y" ]; then
+if [ "$8" == "m" ]; then
 lcm_ip=$(fuel node --env $enum | grep lcm | awk {'print $10'})
 ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
 echo $ret | python -mjson.tool
