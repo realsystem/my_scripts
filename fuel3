@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-# fuel3 <env_name> <install_plugins?> <remove_env?> <create_env?> <remove_all_nodes?> <add_nodes?> <deploy?> <manage?>
+# fuel3 <env_name> <install_plugins?> <remove_env?> <create_env?> <remove_all_nodes?> <add_nodes?> <deploy?> <manage?> <plugins_remove?>
 # fuel3 lcm1 p w c r a d m
 # get plugins
 if [ "$2" == "p" ]; then
@@ -9,7 +9,7 @@ if [ "$2" == "p" ]; then
   for p in ${plug_list}; do
     echo $p
     p_name=$(curl ${plug_url} -s | grep ${p} | awk -F'href=\"' '{print $2}' | awk -F'\">' '{print $1}' | sed '/^$/d' | tail -1)
-    wget ${plug_url}${p_name}
+    wget -nc ${plug_url}${p_name}
     fuel plugins --install ${p_name}
   done
 fi
@@ -18,6 +18,10 @@ ename=$1
 enum=$(fuel env  | grep $ename | awk '{print $1}')
 if [ "$3" == "w" ] && [ -n "$enum" ]; then
   fuel --env $enum env --force delete
+fi
+##clean plugins
+if [ "$9" == "pr" ]; then
+  for plug in $(fuel plugins | grep ubuntu | awk '{print $3}'); do pver=$(fuel plugins | grep $plug | awk '{print $5}'); fuel plugins --remove $plug==$pver; done
 fi
 ##create new env
 if [ "$4" == "c" ]; then
