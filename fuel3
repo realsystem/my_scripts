@@ -4,7 +4,8 @@
 # fuel3 lcm1 p w c r a d m
 # get plugins
 if [ "$2" == "p" ]; then
-  plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/drop4/main/9.0/fuel-plugins-9.0/"
+  #plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/drop4/main/9.0/fuel-plugins-9.0/"
+  plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/3.0.1/fuel-plugins-9.0/"
   plug_list="lma_collector aic-fuel-plugin fuel-plugin-lcm elasticsearch_kibana influxdb_grafana alerting contrail"
   for p in ${plug_list}; do
     echo $p

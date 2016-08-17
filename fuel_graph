@@ -1,0 +1,8 @@
+#!/bin/bash -ex
+
+eid=$(fuel env | grep $1 | awk '{print $1}')
+fuel2 env deploy $eid --dry-run
+fuel task | sort -n | grep dry_run | tail -1 | awk '{print $11}'
+yaml=$(astute-simulator -l | grep $uuid)
+astute-simulator -y $yaml -p
+dot -Tpng /var/lib/astute/graphs/graph-${uuid}.dot -o ${uuid}.png
