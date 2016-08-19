@@ -31,12 +31,9 @@ if [ "$4" == "c" ]; then
   enum=$(fuel env  | grep $ename | awk '{print $1}')
   ##update env
   fuel env --env $enum --attributes --download
-  sed '/^      default: false$/{$!{N;s/^      default: false\n      enabled: false$/      default: false\n      enabled: true/;ty;P;D;:y}}' cluster_${enum}/attributes.yaml > cluster_${enum}/attributes_new.yaml
-  mv cluster_${enum}/attributes_new.yaml cluster_${enum}/attributes.yaml
-  sed '/^          label: Enable public VIP$/{$!{N;s/^          label: Enable public VIP\n          type: checkbox\n          value: false$/          label: Enable public VIP\n          type: checkbox\n          value: true/;ty;P;D;:y}}' cluster_${enum}/attributes.yaml > cluster_${enum}/attributes_new.yaml
-  mv cluster_${enum}/attributes_new.yaml cluster_${enum}/attributes.yaml
-  sed '/^          value: \x27\x27$/{$!{N;s/^          value: \x27\x27\n          weight: 155$/          value: \x27http:\/\/gerrit.mtn5.cci.att.com:18080\/lcm_control\x27\n          weight: 155/;ty;P;D;:y}}' cluster_${enum}/attributes.yaml > cluster_${enum}/attributes_new.yaml
-  mv cluster_${enum}/attributes_new.yaml cluster_${enum}/attributes.yaml
+  perl -i -0pe 's/      default: false\n      enabled: false/      default: false\n      enabled: true/g' cluster_${enum}/attributes.yaml
+  perl -i -0pe 's/          label: Enable public VIP\n          type: checkbox\n          value: false/          label: Enable public VIP\n          type: checkbox\n          value: true/' cluster_${enum}/attributes.yaml
+  perl -i -0pe 's/          value: \x27\x27\n          weight: 155/          value: \x27http:\/\/gerrit.mtn5.cci.att.com:18080\/lcm_control\x27\n          weight: 155/' cluster_${enum}/attributes.yaml
   fuel env --env $enum --attributes --upload
 fi
 ##add nodes to env
@@ -70,16 +67,18 @@ if [ "$7" == "d" ]; then
   fuel deploy-changes --env $enum
 fi
 if [ "$8" == "m" ]; then
-lcm_ip=$(fuel node --env $enum | grep lcm | awk {'print $10'})
-ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
-echo $ret | python -mjson.tool
-ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments -s)
-echo $ret | python -mjson.tool
-ret=$(ssh fuel@$lcm_ip curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/2/smart_proxies/1/import_puppetclasses -s)
-echo $ret
-for h in {1..7}; do
-  ret=$(ssh fuel@$lcm_ip "curl -X PUT -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/${h} -s --data '{\"host\":{\"id\":1, \"environment_name\":\"main_9_0\", \"managed\":true}}'")
+  lcm_ip=$(fuel node --env $enum | grep lcm | awk {'print $10'})
+  ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
+  echo $ret | python -mjson.tool
+  ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments -s)
+  echo $ret | python -mjson.tool
+  ret=$(ssh fuel@$lcm_ip curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/3_0_1/smart_proxies/1/import_puppetclasses -s)
   echo $ret
+  ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts -s)
+  hosts_num=$(echo $ret | python -mjson.tool | grep "\"total" | awk '{print $2}')
+  for h in {1..$hosts_num}; do
+    ret=$(ssh fuel@$lcm_ip "curl -X PUT -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/${h} -s --data '{\"host\":{\"id\":1, \"environment_name\":\"3_0_1\", \"managed\":true}}'")
+    echo $ret
 done
 #ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/1 -s)
 #echo $ret | python -mjson.tool | grep environment_name
