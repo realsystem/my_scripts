@@ -68,21 +68,22 @@ if [ "$7" == "d" ]; then
 fi
 if [ "$8" == "m" ]; then
   lcm_ip=$(fuel node --env $enum | grep lcm | awk {'print $10'})
+  lcm_env_id="3_0_1"
   ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/status -s)
   echo $ret | python -mjson.tool
   ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments -s)
   echo $ret | python -mjson.tool
-  ret=$(ssh fuel@$lcm_ip curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/3_0_1/smart_proxies/1/import_puppetclasses -s)
+  ret=$(ssh fuel@$lcm_ip curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/${lcm_env_id}/smart_proxies/1/import_puppetclasses -s)
   echo $ret
   ret=$(ssh fuel@$lcm_ip curl -X GET -H "Content-Type:application/json" -H "Accept:application/json" -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts -s)
   hosts_num=$(echo $ret | python -mjson.tool | grep "\"total" | awk '{print $2}')
   for h in {1..$hosts_num}; do
-    ret=$(ssh fuel@$lcm_ip "curl -X PUT -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/${h} -s --data '{\"host\":{\"id\":1, \"environment_name\":\"3_0_1\", \"managed\":true}}'")
+    ret=$(ssh fuel@$lcm_ip "curl -X PUT -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/hosts/${h} -s --data '{\"host\":{\"id\":1, \"environment_name\":\"${lcm_env_id}\", \"managed\":true}}'")
     echo $ret
 done
 ret=$(hostname)
 domain_suf=$(echo ${ret#nailgun})
-class_list=$(ssh fuel@$lcm_ip "curl -X GET -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/3_0_1/puppetclasses -s --data '{\"per_page\": 1000}'")
+class_list=$(ssh fuel@$lcm_ip "curl -X GET -H 'Content-Type:application/json' -H 'Accept:application/json' -k -u deploy_user:deploy_passwd https://${lcm_ip}/api/environments/${lcm_env_id}/puppetclasses -s --data '{\"per_page\": 1000}'")
 for role_name in compute identity contrail_db contrail_config contrail_control dbng swift_proxy mongo swift_storage haproxy controller; do
   tmp_ret=$(echo $class_list | python -mjson.tool  | grep -B1 -E "lcm_role.*${role_name}" | grep "id\"\:" | awk '{print $2}')
   class_id=${tmp_ret%","}
