@@ -4,8 +4,8 @@
 # fuel3 lcm1 p w c r a d m
 # get plugins
 if [ "$2" == "p" ]; then
-  plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/main/9.0/fuel-plugins-9.0/"
-  #plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/3.0.1/fuel-plugins-9.0/"
+  #plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/drop4/main/9.0/fuel-plugins-9.0/"
+  plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/3.0.1/fuel-plugins-9.0/"
   plug_list="lma_collector aic-fuel-plugin fuel-plugin-lcm elasticsearch_kibana influxdb_grafana alerting contrail"
   for p in ${plug_list}; do
     echo $p
@@ -34,6 +34,8 @@ if [ "$4" == "c" ]; then
   perl -i -0pe 's/      default: false\n      enabled: false/      default: false\n      enabled: true/g' cluster_${enum}/attributes.yaml
   perl -i -0pe 's/          label: Enable public VIP\n          type: checkbox\n          value: false/          label: Enable public VIP\n          type: checkbox\n          value: true/' cluster_${enum}/attributes.yaml
   perl -i -0pe 's/          value: \x27\x27\n          weight: 155/          value: \x27http:\/\/gerrit.mtn5.cci.att.com:18080\/lcm_control\x27\n          weight: 155/' cluster_${enum}/attributes.yaml
+  perl -i -0pe 's/label: Install Murano\n      type: checkbox\n      value: false/label: Install Murano\n      type: checkbox\n      value: true/g' cluster_${enum}/attributes.yaml
+  perl -i -0pe 's/label: Install Ceilometer and Aodh\n      type: checkbox\n      value: false/label: Install Ceilometer and Aodh\n      type: checkbox\n      value: true/g' cluster_${enum}/attributes.yaml
   fuel env --env $enum --attributes --upload
 fi
 ##add nodes to env
@@ -42,7 +44,7 @@ function add_node() {
 # 2 - env ID
 # 3 - comma separataed role list
 for n in {1..$1}; do
-  nnum=$(fuel node | grep discover | grep -v lcm | grep -v aic | grep -v contrail | grep -v kibana | grep -v grafana | grep -v alert | awk '{print $1}' | head -n1)
+  nnum=$(fuel node | grep discover | grep -v mongo | grep -v lcm | grep -v aic | grep -v contrail | grep -v kibana | grep -v grafana | grep -v alert | awk '{print $1}' | head -n1)
   if [ -n "$nnum" ]; then
     fuel --env $2 node set --node $nnum --role $3
   fi
@@ -54,6 +56,7 @@ fi
 if [ "$6" == "a" ]; then
   add_node 1 $enum aic-compute
   add_node 1 $enum lcm
+  add_node 1 $enum mongo
   add_node 1 $enum aic-controller,aic-haproxy,aic-swift-proxy
   add_node 1 $enum aic-identity
   add_node 1 $enum aic-dbng
