@@ -64,6 +64,7 @@ if [ "$6" == "a" ]; then
   add_node 1 $enum aic-dbng
   add_node 1 $enum aic-swift-storage
   add_node 1 $enum contrail-config,contrail-db,contrail-control
+  add_node 1 $enum contrail-analytics,contrail-analytics-db
   add_node 1 $enum elasticsearch_kibana,influxdb_grafana,infrastructure_alerting
 fi
 if [ "$7" == "d" ]; then
