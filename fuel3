@@ -8,7 +8,9 @@ if [ "$2" == "p" ]; then
   #plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/3.0.1/fuel-plugins-9.0/"
   #plug_url="http://mirrors.mtn5.cci.att.com/aic-mos/stable/main/9.0/fuel-plugins-9.0/"
   plug_url="http://mirrors-aic.it.att.com/aic-mos/current/main/9.0/fuel-plugins-9.0/"
+  #plug_url="http://mirrors-aic.it.att.com/aic-mos/stable/3.0.2/fuel-plugins-9.0/"
   plug_list="lma_collector aic-fuel-plugin fuel-plugin-lcm elasticsearch_kibana influxdb_grafana alerting contrail"
+  #plug_list="lma_collector aic-fuel-plugin fuel-plugin-lcm contrail"
   for p in ${plug_list}; do
     echo $p
     p_name=$(curl ${plug_url} -s | grep ${p} | awk -F'href=\"' '{print $2}' | awk -F'\">' '{print $1}' | sed '/^$/d' | tail -1)
@@ -35,7 +37,8 @@ if [ "$4" == "c" ]; then
   fuel env --env $enum --attributes --download
   perl -i -0pe 's/      default: false\n      enabled: false/      default: false\n      enabled: true/g' cluster_${enum}/attributes.yaml
   perl -i -0pe 's/          label: Enable public VIP\n          type: checkbox\n          value: false/          label: Enable public VIP\n          type: checkbox\n          value: true/' cluster_${enum}/attributes.yaml
-  perl -i -0pe 's/          value: \x27\x27\n          weight: 155/          value: \x27http:\/\/gerrit.mtn5.cci.att.com:18080\/lcm_control\x27\n          weight: 155/' cluster_${enum}/attributes.yaml
+  perl -i -0pe 's/      value: false\n      weight: 12/      value: true\n      weight: 12/' cluster_${enum}/attributes.yaml
+  perl -i -0pe 's/          value: \x27\x27\n          weight: 40/          value: \x27http:\/\/gerrit.mtn5.cci.att.com:18080\/lcm_control\x27\n          weight: 40/' cluster_${enum}/attributes.yaml
   perl -i -0pe 's/label: Install Murano\n      type: checkbox\n      value: false/label: Install Murano\n      type: checkbox\n      value: true/g' cluster_${enum}/attributes.yaml
   perl -i -0pe 's/label: Install Ceilometer and Aodh\n      type: checkbox\n      value: false/label: Install Ceilometer and Aodh\n      type: checkbox\n      value: true/g' cluster_${enum}/attributes.yaml
   fuel env --env $enum --attributes --upload
@@ -59,9 +62,10 @@ if [ "$6" == "a" ]; then
   add_node 1 $enum aic-compute
   add_node 1 $enum lcm
   add_node 1 $enum mongo
-  add_node 1 $enum aic-controller,aic-haproxy,aic-swift-proxy
+  add_node 1 $enum aic-controller,aic-haproxy,aic-swift-proxy,aic-cinder-volume
   add_node 1 $enum aic-identity
   add_node 1 $enum aic-dbng
+  add_node 1 $enum aic-mistral
   add_node 1 $enum aic-swift-storage
   add_node 1 $enum contrail-config,contrail-db,contrail-control
   add_node 1 $enum contrail-analytics,contrail-analytics-db
