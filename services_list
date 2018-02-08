@@ -1,0 +1,10 @@
+echo '' > /tmp/res
+grep -E 'changed.*stopped.*running' /var/log/puppet.log.1 | grep -v 'Generic.service' | grep -v vip | grep -v Services | grep -v scsi | grep -v Swift | awk -F 'e\[|\]\/' '{print $4}' | grep -v 'p_' >> /tmp/res
+grep -E 'changed.*stopped.*running' /var/log/puppet.log.1 | grep -v 'Generic.service' | grep -v vip | grep -v Services | grep -v scsi | grep Swift | awk -F 'e\[|\]\/' '{print $4}' | grep -v 'p_' | grep -v Servic >> /tmp/res
+grep -E 'changed.*stopped.*running' /var/log/puppet.log.1 | grep -v 'Generic.service' | grep -v vip | grep -v Services | grep -v scsi | grep Swift | awk -F 'e\[|\]\/' '{print $5}' | grep -v 'p_' | grep -v Servic >> /tmp/res
+grep -E 'changed.*stopped.*running' /var/log/puppet.log.1 | grep -v 'Generic.service' | grep -v vip | grep -v Services | grep scsi | awk -F 'e\[|\]\/' '{print $5}' >> /tmp/res
+grep -E 'changed.*stopped.*running' /var/log/puppet.log.1 | grep -v 'Generic.service' | grep -v vip | grep Services | awk -F 'e\[|\]\/' '{print $5}' >> /tmp/res
+grep -E 'changed.*stopped.*running' /var/log/puppet.log.1 | grep -v vip | grep -v Services | grep 'Generic.service' | awk -F 'e\[|\]\/' '{print $6}' >> /tmp/res
+grep -e 'sbin/service.*start' /var/log/puppet.log.1 | awk '{print $8}' >> /tmp/res
+grep 'sbin/start' /var/log/puppet.log.1 | awk '{print $8}' | cut -d \' -f 1 >> /tmp/res
+sort -u /tmp/res > /tmp/res_uniq

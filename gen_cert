@@ -1,0 +1,14 @@
+CLUSTER_ID=1
+lcm_node_list=''
+
+for node_fqdn in $(./deployment_scripts/master/cluster_nodes.py $CLUSTER_ID lcm); do
+  lcm_node_list="${lcm_node_list}${node_fqdn}",
+done
+
+for ip in $(./deployment_scripts/master/lcm_vips.py $CLUSTER_ID); do
+  lcm_node_list="${lcm_node_list}${ip}",
+done
+
+dnsdomainname='test.domain.local'
+node_fqdn='node-10.test.domain.local'
+/usr/bin/puppet cert --generate $node_fqdn --dns_alt_names "${lcm_node_list}"puppet,puppet."${dnsdomainname}" --ssldir=../misc/puppet_ssl_certs/$CLUSTER_ID/
