@@ -1,0 +1,1 @@
+openssl req -config conf -new -x509 -sha256 -newkey rsa:2048 -nodes -keyout fuel-key.pem -days 3650 -out fuel-cert.pem
