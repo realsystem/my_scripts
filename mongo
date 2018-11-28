@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+ACTION=${1:-"NONE"}
+
+run_command() {
+  if [ "$2" == "mongo_nodes" ]; then
+    # Mongo nodes IDs (from 'fuel node')
+    mco rpc -I19 -I21 -I23 --display=all execute_shell_command execute cmd="$1"
+  elif [ "$2" == "controllers" ]; then
+    #MOS controller nodes IDs
+    mco rpc -I11 -I12 -I13 --display=all execute_shell_command execute cmd="$1"
+  else
+    echo "Wrong nodes name set passed"
+  fi
+}
+
+# GET PASSWD HERE:
+#PASSWD=$((hiera  -h ceilometer | grep db_password | cut -d'>' -f2 | tr -d ',' | tr -d '\"'))
+#PASSWD='H3WVwYiabAlHHWJHTLz4lHE2'
+#FILE="/tmp/1.txt"
+
+#run_command 'mongo admin -host 127.0.0.1:27017 --eval "load(\"/root/.mongorc.js\"); db.meter.latencyStats( { histograms: true } ).pretty()"'
+#run_command "/usr/bin/mongo admin --quiet --host 127.0.0.1:27017 -p $PASSWD --eval 'printjson(db.isMaster())'
+#n $(seq 4); do sed -i "\$d" ${FILE}; done;" 
+#run_command 'mongo admin -host 127.0.0.1:27017 --eval "load(\"/root/.mongorc.js\"); db.meter.find({}).count()"'
+#run_command 'mongo admin -host 127.0.0.1:27017 --eval "load(\"/root/.mongorc.js\"); db.serverStatus().opcounters.query"'
+
+show_config() {
+  run_command 'mongo admin -host 127.0.0.1:27017 --eval "load(\"/root/.mongorc.js\"); printjson(db.serverCmdLineOpts())" || mongo admin -host 127.0.0.1:27017 --ssl --sslAllowInvalidCertificates --sslAllowInvalidHostnames --eval "load(\"/root/.mongorc.js\"); printjson(db.serverCmdLineOpts())"' 'mongo_nodes'
+}
+
+exec_mongodb_command() {
+  run_command 'mongo admin -host 127.0.0.1:27017 --eval "load(\"/root/.mongorc.js\"); printjson($1)" || mongo admin -host 127.0.0.1:27017 --ssl --sslAllowInvalidCertificates --sslAllowInvalidHostnames --eval "load(\"/root/.mongorc.js\"); printjson(db.serverCmdLineOpts())"' 'mongo_nodes'
+}
+
+enable_ssl() {
+  run_command 'FILE="/etc/mongod.conf"; export FILE; if ! grep -q mongodb.pem ${FILE}; then echo "ADDING SSL configuration to MongoDB nodes"; echo "net:" >> ${FILE}; echo "  ssl:">>${FILE}; echo "    mode: requireSSL">>${FILE}; echo "    PEMKeyFile: /etc/ssl/mongodb.pem">>${FILE}; else echo "SSL already enabled"; fi; start mongod || restart mongod; sleep 2' 'mongo_nodes'
+  run_command 'FILE="/etc/ceilometer/ceilometer.conf"; export FILE; sed -i "s/replicaSet=ceilometer$/replicaSet=ceilometer\&ssl=true\&ssl_cert_reqs=CERT_NONE/g" ${FILE}; if [ $? -eq 0 ]; then echo "Ceilometer SSL configuration is added"; else echo "Ceilometer SSL configuration is already in place! Exiting"; fi; grep ^connection ${FILE}; for SERVICE in ceilometer-api ceilometer-collector ceilometer-agent-notification; do service ${SERVICE} restart || service ${SERVICE} start; done' "controllers"
+
+}
+
+switch_ssl() {
+  #  run_command 'FILE="/etc/mongod.conf"; export FILE; if ! grep -q mongodb.pem ${FILE}; then echo "ADDING"; echo "net:" >> ${FILE}; echo "  ssl:">>${FILE}; echo "    mode: requireSSL">>${FILE}; echo "    PEMKeyFile: /etc/ssl/mongodb.pem">>${FILE}; else echo "REMOVING"; for count in $(seq 4); do sed -i "\$d" ${FILE}; done; ls -la ${FILE}; fi;' 'mongo_nodes'
+  :
+}
+
+disable_ssl() {
+  run_command 'FILE="/etc/mongod.conf"; export FILE; if grep -q mongodb.pem ${FILE}; then echo "REMOVING SSL configuration from MongoDB nodes"; for count in $(seq 4); do sed -i "\$d" ${FILE}; done; else echo "SSL configuration is absent"; fi; start mongod || restart mongod; sleep 2' 'mongo_nodes'
+  run_command 'FILE="/etc/ceilometer/ceilometer.conf"; export FILE; sed -i "s/replicaSet=ceilometer\&ssl=true\&ssl_cert_reqs=CERT_NONE$/replicaSet=ceilometer/g" ${FILE}; if [ $? -eq 0 ]; then echo "Ceilometer SSL configuration is removed"; else echo "Ceilometer SSL configuration is absent! Exiting"; fi; grep ^connection ${FILE}; for SERVICE in ceilometer-api ceilometer-collector ceilometer-agent-notification; do service ${SERVICE} restart || service ${SERVICE} start; done' "controllers"
+}
+
+case "${ACTION}" in
+  enable_ssl )
+    enable_ssl
+  ;;
+  disable_ssl )
+    disable_ssl
+  ;;
+  show_config )
+    show_config
+  ;;
+  exec_mongodb_command )
+    exec_mongodb_command $2
+  ;;
+  * )
+    echo "Error: Unknown option $ACTION. 'enable_ssl', 'disable_ssl' or 'show_config' please"
+  ;;
+esac
+

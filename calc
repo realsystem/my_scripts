@@ -1,0 +1,3 @@
+NEW_BACKUP_SIZE=$(du -c /tmp | grep total | awk {'print $1'})
+FUTURE_BACKUP_SIZE=$(python -c "print \"%d\" % int($NEW_BACKUP_SIZE*1.5)")
+echo $FUTURE_BACKUP_SIZE
