@@ -20,6 +20,8 @@ class CheckCL(object):
     parser = argparse.ArgumentParser(description='Check Craigslist for new posts')
     parser.add_argument('--query', '-q', required=True,
                         help='Query word to search on Craigslist')
+    parser.add_argument('--titles', '-t', action='store_true',
+                            help='Search in titles only')
     parser.add_argument('--pic', '-p', action='store_true',
                             help='Post has pictures')
     parser.add_argument('--maxprice', '-u',
@@ -90,6 +92,8 @@ class CheckCL(object):
       listOpts.append(maxPrice)
     if minPrice:
       listOpts.append(minPrice)
+    if self.options.titles:
+      listOpts.append('srchType=T')
     listOpts.append(queryWord)
     queryOpts = '&'.join(listOpts)
     fullURL = url + area + self.options.group + '?' + queryOpts
