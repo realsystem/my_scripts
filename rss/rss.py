@@ -95,9 +95,9 @@ class CheckCL(object):
       sender.quit()
     now = datetime.datetime.now()
     if new_items:
-    	print(new_items, ' new posts processed', now)
+      print(now, ': ', new_items, ' new posts processed for query:', queryOpts)
     else:
-    	print('No new posts', now)
+      print(now, ': no new posts for query:', queryOpts)
 
 if __name__ == '__main__':
     checker = CheckCL()
