@@ -63,9 +63,11 @@ class CheckCL(object):
 
   def run(self):
     db = self.load_DB()
-    url = 'https://sfbay.craigslist.org/search/'
+    url = 'https://sfbay.craigslist.org/search'
     if self.options.area:
       area = self.options.area
+      if not area.startswith('/'):
+        area = '/' + area
       if not area.endswith('/'):
         area = area + '/'
     else:
