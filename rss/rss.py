@@ -28,6 +28,8 @@ class CheckCL(object):
                         help='Minimum price in search')
     parser.add_argument('--group', '-g',
                         help='Group for sale')
+    parser.add_argument('--area', '-a',
+                        help='Area for sale')
     parser.add_argument('--recepient', '-r', required=True,
                         help='Email to be used as recepient')
     parser.add_argument('--sender', '-s', required=True,
@@ -62,6 +64,12 @@ class CheckCL(object):
   def run(self):
     db = self.load_DB()
     url = 'https://sfbay.craigslist.org/search/'
+    if self.options.area:
+      area = self.options.area
+      if not area.endswith('/'):
+        area = area + '/'
+    else:
+      area = '/'
     if self.options.pic:
       hasPic = 'hasPic=1'
     else:
@@ -75,8 +83,15 @@ class CheckCL(object):
     else:
       minPrice = ''
     queryWord = 'query=' + self.options.query.replace(' ', '%20')
-    queryOpts = '&'.join(['format=rss', hasPic, maxPrice, minPrice, queryWord])
-    parsed = feedparser.parse(url + self.options.group + '?' + queryOpts)
+    listOpts = ['format=rss', hasPic]
+    if maxPrice:
+      listOpts.append(maxPrice)
+    if minPrice:
+      listOpts.append(minPrice)
+    listOpts.append(queryWord)
+    queryOpts = '&'.join(listOpts)
+    fullURL = url + area + self.options.group + '?' + queryOpts
+    parsed = feedparser.parse(fullURL)
     new_items = 0
     with open(self.dbFile, 'a') as dbFile:
       sender = smtplib.SMTP(host='smtp.gmail.com', port=587)
@@ -95,9 +110,9 @@ class CheckCL(object):
       sender.quit()
     now = datetime.datetime.now()
     if new_items:
-      print(now, ': ', new_items, ' new posts processed for query:', queryOpts)
+      print(now, ': ', new_items, ' new posts processed for request:', fullURL)
     else:
-      print(now, ': no new posts for query:', queryOpts)
+      print(now, ': no new posts for request:', fullURL)
 
 if __name__ == '__main__':
     checker = CheckCL()
