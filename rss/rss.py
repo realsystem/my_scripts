@@ -77,17 +77,19 @@ class CheckCL(object):
     if self.options.pic:
       hasPic = 'hasPic=1'
     else:
-      hasPic = 'hasPic=0'
+      hasPic = None
     if self.options.maxprice:
       maxPrice = 'max_price=' + self.options.maxprice
     else:
-      maxPrice = ''
+      maxPrice = None
     if self.options.minprice:
       minPrice = 'min_price=' + self.options.minprice
     else:
-      minPrice = ''
+      minPrice = None
     queryWord = 'query=' + self.options.query.replace(' ', '%20')
-    listOpts = ['format=rss', hasPic]
+    listOpts = ['format=rss']
+    if hasPic:
+      listOpts.append(hasPic)
     if maxPrice:
       listOpts.append(maxPrice)
     if minPrice:
