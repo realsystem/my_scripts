@@ -26,6 +26,8 @@ class CheckCL(object):
                         help='Maximum price in search')
     parser.add_argument('--minprice', '-l',
                         help='Minimum price in search')
+    parser.add_argument('--group', '-g',
+                        help='Group for sale')
     parser.add_argument('--recepient', '-r', required=True,
                         help='Email to be used as recepient')
     parser.add_argument('--sender', '-s', required=True,
@@ -39,14 +41,18 @@ class CheckCL(object):
     return self._options
 
   @property
-  def db_file(self):
-    return self.options.dbpath + 'rss.' + self.options.query + '.db'
+  def dbFileName(self):
+    return 'rss.' + self.options.query.replace(' ', '-') + '.db'
+
+  @property
+  def dbFile(self):
+    return self.options.dbpath + self.dbFileName
 
   def load_DB(self):
     records = set()
     try:
-      with open(self.db_file, 'r') as db_file:
-        for record in db_file:
+      with open(self.dbFile, 'r') as dbFile:
+        for record in dbFile:
           records.add(record.rstrip())
     except OSError as e:
       if e.errno != errno.ENOENT:
@@ -56,7 +62,6 @@ class CheckCL(object):
   def run(self):
     db = self.load_DB()
     url = 'https://sfbay.craigslist.org/search/'
-    group = 'tla'
     if self.options.pic:
       hasPic = 'hasPic=1'
     else:
@@ -69,18 +74,18 @@ class CheckCL(object):
       minPrice = 'min_price=' + self.options.minprice
     else:
       minPrice = ''
-    queryWord = 'query=' + self.options.query
+    queryWord = 'query=' + self.options.query.replace(' ', '%20')
     queryOpts = '&'.join(['format=rss', hasPic, maxPrice, minPrice, queryWord])
-    parsed = feedparser.parse(url + group + '?' + queryOpts)
+    parsed = feedparser.parse(url + self.options.group + '?' + queryOpts)
     new_items = 0
-    with open(self.db_file, 'a') as db_file:
+    with open(self.dbFile, 'a') as dbFile:
       sender = smtplib.SMTP(host='smtp.gmail.com', port=587)
       sender.starttls()
       sender.login(self.options.sender, self.options.password)
       for entry in parsed.entries:
         hash_hex = str(hashlib.sha1(entry['link'].encode('utf-8')).hexdigest())
         if hash_hex not in db:
-          db_file.write(hash_hex + '\n')
+          dbFile.write(hash_hex + '\n')
           msg = MIMEText('\n'.join([entry['title'].replace('&#x0024;', '$'), entry['link'], entry['summary']]))
           msg['From'] = 'me'
           msg['To'] = self.options.recepient
