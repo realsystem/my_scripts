@@ -1,5 +1,7 @@
 #!/bin/sh
 
+logfile=/tmp/$$.log
+exec > $logfile 2>&1
 rsync -tmva ~/Downloads /Volumes/rs_hdd/
 rsync -tmva ~/Documents /Volumes/rs_hdd/
 rsync -tmva ~/projects /Volumes/rs_hdd/
