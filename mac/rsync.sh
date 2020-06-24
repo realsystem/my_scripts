@@ -1,12 +1,21 @@
 #!/bin/sh
 
-logfile=/tmp/$$.log
-exec > $logfile 2>&1
-rsync -tmva --delete ~/Downloads /Volumes/rs_hdd/
-rsync -tmva --delete ~/Documents /Volumes/rs_hdd/
-rsync -tmva --delete ~/projects /Volumes/rs_hdd/
-rsync -tmva --delete ~/Pictures /Volumes/rs_hdd/
-rsync -tmva --delete ~/Music /Volumes/rs_hdd/
-rsync -tmva --delete ~/Movies /Volumes/rs_hdd/
-rsync -tmva --delete ~/VirtualBox* /Volumes/rs_hdd/
-rsync -tmva --delete ~/PycharmProjects /Volumes/rs_hdd/
+set -xe
+
+rsync -mvah --progress --delete ~/Documents /Volumes/rs_hdd/
+rsync -mvah --progress --delete ~/Downloads /Volumes/rs_hdd/
+
+IP="192.168.1.10"
+PORT="873"
+MOUNT="backup"
+rsync -mavh --size-only --progress /Volumes/rs_hdd/Pictures rsync://${IP}:${PORT}/${MOUNT}/
+rsync -mavh --size-only --progress /Volumes/rs_hdd/Documents rsync://${IP}:${PORT}/${MOUNT}/
+rsync -mavh --size-only --progress /Volumes/rs_hdd/Downloads rsync://${IP}:${PORT}/${MOUNT}/
+rsync -mavh --size-only --progress /Volumes/rs_hdd/Photo_video rsync://${IP}:${PORT}/${MOUNT}/
+rsync -mavh --size-only --progress /Volumes/rs_hdd/Movies_archive rsync://${IP}:${PORT}/${MOUNT}/
+rsync -mavh --size-only --progress /Volumes/rs_hdd/rs rsync://${IP}:${PORT}/${MOUNT}/
+rsync -mavh --size-only --progress /Volumes/rs_hdd/SVETA rsync://${IP}:${PORT}/${MOUNT}/
+rsync -mavh --size-only --progress /Volumes/rs_hdd/ARTEM rsync://${IP}:${PORT}/${MOUNT}/
+#for dir in Documents Downloads Movies Desktop; do
+#	rsync -av --delete /Users/segorov/${dir} rsync://${IP}:${PORT}/${MOUNT}
+#done
